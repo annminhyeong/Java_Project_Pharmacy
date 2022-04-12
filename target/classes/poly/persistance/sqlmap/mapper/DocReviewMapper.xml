@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="poly.persistance.mapper.DocReviewMapper">
+
+	
+	
+	<!-- 리뷰 글 리스트 -->
+	<!-- REVIEW_COUNT AS review_count, -->
+	<!--SELECT
+			REVIEW_NO AS review_no,
+			REVIEW_TITLE AS review_title,
+			REVIEW_COUNT AS review_count,
+			REGDATE AS regdate,
+			REVIEW_WRITER AS review_writer
+			
+
+			FROM DOC_REVIEW
+		
+		ORDER BY REVIEW_NO,REGDATE  -->
+	<select id="getReviewList" resultType="DocReviewDTO">	
+	<![CDATA[
+			SELECT * FROM
+			    (
+			     	SELECT
+			            A.*,
+			            ROWNUM AS RNUM
+			        FROM
+			            (
+			                SELECT
+			                    *
+			                FROM
+			                    DOC_REVIEW
+			                ORDER BY
+			                    REVIEW_NO,REGDATE
+			             
+			            ) A
+			        WHERE
+			            ROWNUM <= #{endIndex}
+			    )
+			WHERE
+			    RNUM > #{startIndex}
+	]]>
+
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<!-- 리뷰 글 등록 -->
+	<insert id="insertReviewInfo" parameterType="DocReviewDTO">
+		INSERT INTO DOC_REVIEW(
+			REVIEW_NO,
+			REVIEW_TITLE,
+			REVIEW_CONTENT,
+			REVIEW_WRITER,
+			REGDATE
+		)
+		VALUES(
+			(SELECT NVL(MAX(REVIEW_NO),0)+1 FROM DOC_REVIEW),
+			#{review_title},
+			#{review_content},
+			#{review_writer},
+			SYSDATE
+		)
+	</insert>
+	
+
+	
+	
+	<!-- 리뷰 상세보기 -->
+	<select id="getReviewDetail" parameterType="String"
+		resultType="DocReviewDTO">
+		SELECT
+		REVIEW_TITLE,
+		REVIEW_CONTENT,
+		REVIEW_WRITER,
+		REVIEW_NO
+		FROM
+		DOC_REVIEW
+		WHERE
+		REVIEW_NO = #{review_no}
+	</select>
+	
+	<!-- 리뷰 수정 -->
+	<update id="updateReview" parameterType="DocReviewDTO">
+		UPDATE DOC_REVIEW SET
+		REVIEW_TITLE= #{review_title},
+		REVIEW_CONTENT = #{review_content}
+		WHERE
+		REVIEW_NO = #{review_no} AND REVIEW_WRITER = #{review_writer} 
+	</update>
+
+
+	<!-- 리뷰 삭제 WHERE REVIEW_NO = ( #{review_no} AND REVIEW_WRITER = #{review_writer} ) OR 1 = #{verify} -->
+	<delete id="deleteReview" parameterType="DocReviewDTO">
+		DELETE
+		FROM DOC_REVIEW
+		<where>
+			
+			<choose>
+				<when test="verify == 1">
+					REVIEW_NO = #{review_no}
+				</when>
+				<otherwise>
+					REVIEW_NO = #{review_no} AND REVIEW_WRITER = #{review_writer}
+				</otherwise>
+			</choose>
+		</where>
+	</delete>
+	
+	<!-- 리뷰 조회수 -->
+	<update id="deleteReviewCount" parameterType="String">
+		UPDATE DOC_REVIEW SET
+		REVIEW_COUNT = REVIEW_COUNT+1
+		WHERE REVIEW_NO = #{review_no}
+	</update>
+
+	<!-- 리뷰 리스트 개수 -->
+	<select id="AllReviewData" resultType="int">
+		SELECT COUNT(*) as count FROM DOC_REVIEW
+	</select>
+	
+	
+	
+	<!-- 리뷰 리스트 검색 -->
+	<select id="getReviewListSearch" resultType="DocReviewDTO">
+	<![CDATA[
+			SELECT * FROM
+			    (
+			     	SELECT
+			            B.*,
+			            ROWNUM AS RNUM
+			        FROM
+			            (
+			                SELECT
+			                    *
+			                FROM
+			                    DOC_REVIEW
+	]]>
+					<include refid="search"></include>	
+	<![CDATA[		
+			                ORDER BY
+			                    REVIEW_NO DESC ,REGDATE DESC
+				
+		
+            
+			            ) B
+			        WHERE
+			            ROWNUM <= #{endIndex}
+			    )
+			WHERE
+			    RNUM > #{startIndex}
+	]]>	
+	</select>
+	
+	<!-- 리뷰 리스트 개수 검색-->
+	<select id="AllReviewDataSearch" resultType="int">
+		SELECT COUNT(*) as count FROM DOC_REVIEW
+		<include refid="search"></include>	
+	</select>
+	
+	<!-- 검색 구분 쿼리 -->
+	<sql id="search">
+		<choose>
+			<when test="searchType =='review_title'">
+				WHERE REVIEW_TITLE like '%'||#{keyword} ||'%'
+			</when>
+			
+			<when test="searchType =='review_content'">
+				WHERE REVIEW_CONTENT like '%'|| #{keyword}||'%'
+			</when>
+			
+			<when test="searchType =='review_writer'">
+				WHERE REVIEW_WRITER like '%'|| #{keyword}|| '%'
+			</when>
+			<otherwise>
+			
+			</otherwise>
+
+		</choose>
+		
+	</sql>
+
+
+
+
+
+</mapper>
